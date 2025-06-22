@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+
 import path from 'path' // ← required to resolve paths
 
 export default defineConfig({
@@ -18,4 +19,10 @@ export default defineConfig({
       '/twilio': 'http://localhost:8000',
     },
   },
+
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [vue()],
+
 })

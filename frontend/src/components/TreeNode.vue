@@ -1,5 +1,6 @@
 <template>
   <li class="mb-2">
+
     <button
       @click="toggle"
       :class="[
@@ -19,11 +20,17 @@
         :path="`${path}.${key}`"
         @select="$emit('select', `${path}.${key}`, child.label)"
       />
+
+    <span>📞 {{ node.label }}</span>
+    <ul v-if="node.children && node.children.length">
+      <TreeNode v-for="child in node.children" :key="child.key" :node="child" />
+
     </ul>
   </li>
 </template>
 
 <script setup>
+
 console.log("🔹 Rendering TreeNode:", node);
 import { ref, computed } from 'vue'
 
@@ -48,3 +55,9 @@ const childArray = computed(() =>
   hasChildren.value ? Object.values(props.node.children) : []
 )
 </script>
+
+defineProps({
+  node: Object
+})
+</script>
+
