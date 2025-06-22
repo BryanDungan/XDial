@@ -1,91 +1,79 @@
 <template>
-  <div class="max-w-xl mx-auto mt-10 p-6 bg-white rounded-xl shadow">
-    <h2 class="text-xl font-bold mb-4">Start Recon Session</h2>
+  <div class="p-4 max-w-2xl mx-auto text-white">
+    <h1 class="text-2xl font-bold mb-4">Start Recon Session</h1>
 
-    <form @submit.prevent="startSession" class="space-y-4">
+    <!-- Input & Button -->
+    <div class="flex gap-2 mb-4">
       <input
         v-model="query"
-        class="w-full border p-2 rounded"
-        placeholder="Talk to HR at Delta"
+        @keyup.enter="startSession"
+        type="text"
+        placeholder="Enter your query"
+        class="border px-3 py-2 rounded w-full bg-gray-800 text-white"
       />
       <button
-        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        type="submit"
+        @click="startSession"
+        class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
       >
         Start Recon
       </button>
-    </form>
-
-    <div v-if="showMetadata" class="mt-6 space-y-2">
-      <p class="text-gray-700">📡 <strong>Status:</strong> {{ metadata.status || 'Loading...' }}</p>
-      <p class="text-gray-700">🗣️ <strong>Query:</strong> {{ metadata.query || 'Loading...' }}</p>
-      <p class="text-sm text-gray-500"><strong>🕒 Created:</strong> {{ metadata.created_at || '...' }}</p>
-      <p class="text-gray-500 text-sm"><strong>ID:</strong> {{ sessionId }}</p>
     </div>
+
+    <!-- Session Info -->
+    <div v-if="session" class="mt-6 space-y-2 text-sm text-gray-300">
+      <div>🧠 <strong>Query:</strong> {{ session.query }}</div>
+      <div>⏰ <strong>Created:</strong> {{ session.created_at }}</div>
+      <div>🆔 <strong>ID:</strong> {{ session.session_id || session.id }}</div>
+    </div>
+
+    <!-- Tree Visualizer -->
+    <ReconTreeVisualizer
+      v-if="session && session.tree"
+      :session="session"
+      :tree="session.tree"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { initializeApp } from 'firebase/app'
-import { getDatabase, ref as dbRef, onValue } from 'firebase/database'
-import { getAnalytics } from 'firebase/analytics'
+import { ref, watchEffect } from 'vue'
+import ReconTreeVisualizer from './ReconTreeVisualizer.vue'
+import { fetchSession } from '@/api'
 
-const query = ref('')
-const sessionId = ref(null)
 const session = ref(null)
-const metadata = ref({})
-const showMetadata = ref(false)
+const query = ref('')
 
-// ✅ Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyA02CfTBLQ_sFXtIfMjatJA-7G_f0Z2myA",
-  authDomain: "x-dial-realtime.firebaseapp.com",
-  databaseURL: "https://x-dial-realtime-default-rtdb.firebaseio.com",
-  projectId: "x-dial-realtime",
-  storageBucket: "x-dial-realtime.firebasestorage.app",
-  messagingSenderId: "439266499379",
-  appId: "1:439266499379:web:98ffe7f10840e8cdb2bc46",
-  measurementId: "G-DR0TL59ZX8"
-}
-
-// ✅ Init Firebase
-const app = initializeApp(firebaseConfig)
-const db = getDatabase(app)
-const analytics = getAnalytics(app)
+// Optional debugging to confirm state changes
+watchEffect(() => {
+  console.log('🧠 Session Updated:', session.value)
+})
 
 async function startSession() {
-  console.log("▶️ startSession triggered")
+  if (!query.value.trim()) return;
 
-  const response = await fetch('http://127.0.0.1:8000/start-recon', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user_id: 'demo-user', query: query.value })
-  })
+  try {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/start-recon`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: query.value,
+        user_id: 'user-123'
+      })
+    });
 
-  const data = await response.json()
-  sessionId.value = data.session_id
-  localStorage.setItem('latestSession', data.session_id)
-  showMetadata.value = true
+    const data = await res.json()
+    session.value = data // Set session from backend response
 
-  const firebaseSessionRef = dbRef(db, `/sessions/${data.session_id}`)
-  onValue(firebaseSessionRef, (snapshot) => {
-    const result = snapshot.val() || {}
-    session.value = result
+    // 🔄 Wait and refresh tree (optional)
+    setTimeout(async () => {
+      const refreshed = await fetchSession(data.session_id)
+      if (refreshed?.query) {
+        session.value = { ...session.value, ...refreshed }
+      }
+    }, 2000)
 
-    metadata.value = {
-      query: result.query,
-      status: result.status,
-      created_at: result.created_at
-    }
-
-    console.log("📡 Metadata:", metadata.value)
-  })
+  } catch (err) {
+    console.error('Failed to start recon:', err)
+  }
 }
 </script>
-
-<style scoped>
-body {
-  font-family: sans-serif;
-}
-</style>

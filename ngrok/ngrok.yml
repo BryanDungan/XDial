@@ -1,0 +1,11 @@
+version: 3
+authtoken: 2yKnD0fc6LMFw0vnV50cgusJ53p_HoVxrSwQ1rYVKooExgFv
+
+tunnels:
+  xdial:
+    proto: http
+    addr: 8000
+    metadata: "XDial local dev tunnel"
+    schemes:
+      - http
+    domain: xdial.ngrok.app
