@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+
+# Env
+.env
+
+# IDEs
+.vscode/
+.idea/
+
+# Twilio audio
+recordings/
+snapshots/
+logs/
+
+# OS
+.DS_Store
+
+# Misc
+*.mp3
+
+# Node
+node_modules/
